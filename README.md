@@ -8,23 +8,48 @@ Vault Search indexes Markdown files from an Obsidian vault into SQLite + FTS5 an
 
 Prerequisite: Python >= 3.10。
 
+创建并激活虚拟环境：
+
 ```bash
-# 创建并激活虚拟环境
+# macOS / Linux
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 安装项目和依赖
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+安装项目和依赖：
+
+```bash
+# macOS / Linux
 python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 
-# 验证安装
+# Windows
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+验证安装：
+
+```bash
+# macOS / Linux
 python3 -c "import vault_search; print(vault_search.__version__)"
+
+# Windows
+python -c "import vault_search; print(vault_search.__version__)"
 ```
 
 每次新开终端使用前，先激活虚拟环境：
 
 ```bash
+# macOS / Linux
 source .venv/bin/activate
+
+# Windows
+.venv\Scripts\activate
 ```
 
 ## 使用
@@ -94,8 +119,13 @@ vault-search "关键词" --db /path/to/vault/tmp/vault-search.sqlite
 安装测试依赖并运行：
 
 ```bash
+# macOS / Linux
 python3 -m pip install pytest
 python3 -m pytest -v
+
+# Windows
+python -m pip install pytest
+python -m pytest -v
 ```
 
 ## 限制
