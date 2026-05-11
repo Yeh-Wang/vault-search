@@ -11,28 +11,28 @@ Prerequisite: local Python `>=3.10`.
 Create and activate a virtual environment:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
 Install the project in editable mode and install the test runner:
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -e .
-python -m pip install pytest
+python3 -m pip install --upgrade pip
+python3 -m pip install -e .
+python3 -m pip install pytest
 ```
 
 Verify the package import:
 
 ```bash
-python -c "import vault_search; print(vault_search.__version__)"
+python3 -c "import vault_search; print(vault_search.__version__)"
 ```
 
 Run the test suite:
 
 ```bash
-python -m pytest -v
+python3 -m pytest -v
 ```
 
 Run the CLI:
@@ -49,15 +49,15 @@ If `vault-index`, `vault-search`, or `vault-health` are not found after installa
 
 ```bash
 source .venv/bin/activate
-which python
+which python3
 which vault-search
 ```
 
 If commands are still not found, locate the Python scripts directory with:
 
 ```bash
-python -m site --user-base
-python -m pip show -f vault-search
+python3 -m site --user-base
+python3 -m pip show -f vault-search
 ```
 
 Then either add that environment's `bin` directory to `PATH`, or run the generated scripts by absolute path.
@@ -109,7 +109,7 @@ Main code paths:
 Before committing changes, run:
 
 ```bash
-python -m pytest -v
+python3 -m pytest -v
 ```
 
 ## Limitations
