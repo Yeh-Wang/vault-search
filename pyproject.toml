@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vault-search"
+version = "0.1.0"
+description = "Local SQLite + FTS5 full-text search for Obsidian vaults"
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.scripts]
+vault-index = "vault_search.cli:main_index"
+vault-search = "vault_search.cli:main_search"
+vault-health = "vault_search.cli:main_health"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
