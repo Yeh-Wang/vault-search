@@ -4,10 +4,23 @@ Local-first command line search for Obsidian vaults.
 
 Vault Search indexes Markdown files from an Obsidian vault into SQLite + FTS5 and provides CLI commands for search and lightweight vault health checks.
 
-## Install
+## Setup and Run
+
+Prerequisite: local Python `>=3.10`.
+
+Create and activate a virtual environment:
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install the project in editable mode and install the test runner:
+
+```bash
+python -m pip install --upgrade pip
 python -m pip install -e .
+python -m pip install pytest
 ```
 
 Verify the package import:
@@ -16,7 +29,31 @@ Verify the package import:
 python -c "import vault_search; print(vault_search.__version__)"
 ```
 
-If `vault-index`, `vault-search`, or `vault-health` are not found after installation, your Python scripts directory is probably not on `PATH`. Locate it with:
+Run the test suite:
+
+```bash
+python -m pytest -v
+```
+
+Run the CLI:
+
+```bash
+vault-index --root /path/to/vault
+vault-search "SSL 证书" --root /path/to/vault
+vault-search "SSL 证书" --root /path/to/vault --json
+vault-health --root /path/to/vault
+vault-health --root /path/to/vault --json
+```
+
+If `vault-index`, `vault-search`, or `vault-health` are not found after installation, confirm that the virtual environment is active:
+
+```bash
+source .venv/bin/activate
+which python
+which vault-search
+```
+
+If commands are still not found, locate the Python scripts directory with:
 
 ```bash
 python -m site --user-base
@@ -60,16 +97,19 @@ vault-search "SSL" --db /tmp/vault.sqlite --json
 
 ## Development
 
+Main code paths:
+
+- `src/vault_search/parser.py`: Markdown parsing
+- `src/vault_search/discovery.py`: vault file discovery
+- `src/vault_search/database.py`: SQLite schema, search, and health queries
+- `src/vault_search/indexer.py`: index build orchestration
+- `src/vault_search/cli.py`: CLI entry points
+- `tests/`: behavior coverage
+
+Before committing changes, run:
+
 ```bash
-python -m pip install -e .
 python -m pytest -v
-```
-
-This project requires Python `>=3.10`. If your system `python` points to an older runtime, use a newer interpreter explicitly:
-
-```bash
-python3.12 -m pip install -e .
-python3.12 -m pytest -v
 ```
 
 ## Limitations
