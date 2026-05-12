@@ -11,15 +11,16 @@ readme = "README.md"
 license = {text = "MIT"}
 
 [project.scripts]
-vault-index = "vault_search.cli:main_index"
-vault-search = "vault_search.cli:main_search"
-vault-health = "vault_search.cli:main_health"
+vlt = "vault_search.cli:main"
 
 [tool.setuptools.package-dir]
 "" = "src"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[dependency-groups]
+dev = ["pytest"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

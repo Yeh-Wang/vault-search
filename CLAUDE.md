@@ -5,26 +5,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Install in editable mode + test runner
-python3 -m pip install -e .
-python3 -m pip install pytest
+# Install project and all dependencies (creates venv + lockfile automatically)
+uv sync
 
 # Run full test suite
-python3 -m pytest -v
+uv run pytest -v
 
 # Run a single test file or test
-python3 -m pytest tests/test_parser.py -v
-python3 -m pytest tests/test_parser.py::test_parse_markdown_frontmatter_headings_tags_and_links -v
+uv run pytest tests/test_parser.py -v
+uv run pytest tests/test_parser.py::test_parse_markdown_frontmatter_headings_tags_and_links -v
 
-# Run the CLI tools
-vault-index --root /path/to/vault
-vault-search "query" --root /path/to/vault --json
-vault-health --root /path/to/vault --json
+# Run the CLI tool
+uv run vlt index --root /path/to/vault
+uv run vlt search "query" --root /path/to/vault --json
+uv run vlt health --root /path/to/vault --json
+
+# Config management
+uv run vlt config set default_root /path/to/vault
+uv run vlt config list
+uv run vlt config path
 ```
 
 ## Architecture
 
-This is a local-first CLI tool for full-text search over Obsidian vaults. It indexes Markdown files into SQLite + FTS5 and provides three CLI entry points: `vault-index`, `vault-search`, `vault-health`.
+This is a local-first CLI tool for full-text search over Obsidian vaults. It indexes Markdown files into SQLite + FTS5 and provides a single `vlt` CLI entry point with subcommands: `index`, `search`, `health`, `config`.
 
 **Pipeline:** `discovery` → `parser` → `indexer` (which calls `database`)
 
@@ -33,7 +37,8 @@ This is a local-first CLI tool for full-text search over Obsidian vaults. It ind
 - **`models.py`** — frozen dataclasses: `Document`, `Heading`, `Link`. These are the canonical data types flowing through the pipeline.
 - **`indexer.py`** — orchestrates discovery + parsing + link resolution, then calls `rebuild_database()`. Link resolution matches wikilink targets against document paths, titles, and stems (in that order), stripping `#section` fragments.
 - **`database.py`** — SQLite schema management, full-text search, and health queries. Uses FTS5 for keyword search with a Chinese-friendly `LIKE` fallback (triggered when FTS5 returns nothing for CJK queries). Schema: `documents`, `document_tags`, `headings`, `wikilinks`, `documents_fts` (virtual), `index_meta`.
-- **`cli.py`** — argparse-based CLI. `--root` sets vault path (implies default DB path `<vault>/tmp/vault-search.sqlite`). `--db` overrides the DB path directly. `_resolve_db` handles the root/db resolution logic shared across all three commands.
+- **`cli.py`** — argparse subcommands under `vlt` entry point. `--root` sets vault path (implies default DB path `<vault>/tmp/vault-search.sqlite`). `--db` overrides the DB path directly. Root resolution: CLI `--root` > auto-detect `.obsidian/` from cwd > global config `default_root`. Auto-builds index when database missing. Errors in helpers use `_CliError` exception, caught in `main()` for clean exit codes.
+- **`config.py`** — configuration management. Global config at `~/.config/vault-search/config.json`, project config at `<vault>/.obsidian/vault-search.json`. `resolve_root()` implements the priority chain. `resolve_setting()` merges project > global settings. `detect_vault_root()` walks up from cwd looking for `.obsidian/`.
 
 **Default DB path:** `<vault_root>/tmp/vault-search.sqlite`
 
@@ -42,5 +47,5 @@ This is a local-first CLI tool for full-text search over Obsidian vaults. It ind
 - Codebase targets Python >= 3.10, uses `from __future__ import annotations` everywhere.
 - Package uses `src` layout (`src/vault_search/`), configured via `pyproject.toml` with setuptools.
 - Tests use `tmp_path` fixture for isolation and `sample_vault` (conftest) for a realistic multi-file vault structure.
-- Ignored directories are a hardcoded set in `discovery.py` — no config file.
+- Config system: global (`~/.config/vault-search/config.json`) + project (`<vault>/.obsidian/vault-search.json`). No env vars.
 - The index is a full rebuild every time (no incremental indexing in v1).

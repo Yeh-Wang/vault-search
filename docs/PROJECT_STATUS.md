@@ -1,27 +1,25 @@
 # Project Status
 
-Date: 2026-05-11
+
+Date: 2026-05-12
 
 ## Current State
 
-V1 baseline is implemented, tested, and committed.
+V1 baseline + config system + unified CLI, tested and committed.
 
-Latest stable commit:
+The package imports as `vault_search` and exposes a single `vlt` CLI entry point with subcommands:
 
-```text
-04b62e5 feat: implement vault search v1
-```
+- `vlt index`
+- `vlt search`
+- `vlt health`
+- `vlt config`
 
-The repository root is now a working Python project. The package imports as `vault_search` and exposes three CLI commands:
-
-- `vault-index`
-- `vault-search`
-- `vault-health`
+Package management migrated from pip/pyenv to uv.
 
 ## Completed
 
 - Python project skeleton with `pyproject.toml`, `src/`, and `tests/`.
-- Editable package install using `setuptools`.
+- Editable package install using `setuptools`, managed by `uv`.
 - Markdown parser for frontmatter tags, inline tags, headings, body text, and wikilinks.
 - File discovery for Markdown notes with default ignored runtime directories.
 - SQLite schema for documents, tags, headings, wikilinks, metadata, and FTS5 search.
@@ -32,10 +30,14 @@ The repository root is now a working Python project. The package imports as `vau
 - Area and tag search filters.
 - Wikilink resolution by path, title, and file stem.
 - Lightweight health summary.
-- CLI commands for indexing, search, and health checks.
-- Friendly CLI errors for missing databases.
-- Empty vault handling.
-- README with install, quick start, PATH troubleshooting, development, and limitations.
+- Unified CLI (`vlt`) with subcommands (index, search, health, config).
+- Config system: global (`~/.config/vault-search/config.json`) + project (`<vault>/.obsidian/vault-search.json`).
+- Auto-detect vault root by walking up from cwd looking for `.obsidian/`.
+- Auto-build index when database doesn't exist.
+- Windows UTF-8 output support.
+- Configurable `--limit` via CLI > project config > global config > default 10.
+- Global tool install via `uv tool install -e .`.
+- README structured for users and developers.
 - Git repository initialized with V1 baseline commit.
 
 ## Verification
@@ -43,26 +45,27 @@ The repository root is now a working Python project. The package imports as `vau
 Last verified command:
 
 ```bash
-python3 -m pytest -v
+uv run pytest -v
 ```
 
 Last verified result:
 
 ```text
-19 passed
+38 passed
 ```
 
-Additional smoke checks performed:
+Smoke checks performed:
 
-- Indexed the project repository itself.
-- Searched indexed docs for `SQLite`.
-- Confirmed text search output includes snippets.
-- Confirmed text search with no results prints `No results.`
-- Confirmed `.pytest_cache/` is ignored during discovery.
+- Indexed real vault (90 documents) successfully.
+- Search returns Chinese and English results.
+- Health check reports broken wikilinks.
+- `vlt config set/get/list/path` all work.
+- `vlt config set --local --root` writes project config correctly.
+- Auto-detect `.obsidian/` from cwd works.
+- `vlt --help` and all subcommand `--help` show descriptions.
 
 ## Known Limitations
 
-- No config file support yet.
 - No incremental indexing.
 - No semantic search or embeddings.
 - No web UI.
@@ -74,10 +77,9 @@ Additional smoke checks performed:
 
 ## Next Candidates
 
-- Add `CHANGELOG.md` for `0.1.0`.
-- Add release metadata to `pyproject.toml`.
 - Improve search ranking.
 - Improve health text output.
-- Add config support via `<vault>/meta/search-config.json`.
 - Add more parser coverage for real-world frontmatter variants.
 - Add tests for malformed Markdown/frontmatter edge cases.
+- Investigate incremental indexing.
+- Semantic search investigation (v0.3.0 roadmap).
