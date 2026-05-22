@@ -29,3 +29,22 @@ class Document:
     body: str = ""
     mtime: float = 0.0
     explicit_title: bool = False
+
+
+@dataclass(frozen=True)
+class SearchResult:
+    path: str
+    title: str
+    area: str
+    tags: list[str]
+    snippet: str
+    score: float = 0.0
+
+    def to_dict(self) -> dict:
+        return {
+            "path": self.path,
+            "title": self.title,
+            "area": self.area,
+            "tags": self.tags,
+            "snippet": self.snippet,
+        }

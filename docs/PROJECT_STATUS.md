@@ -1,11 +1,10 @@
 # Project Status
 
-
-Date: 2026-05-12
+Date: 2026-05-22
 
 ## Current State
 
-V1 baseline + config system + unified CLI, tested and committed.
+V1 baseline + config system + unified CLI + **query logic refactoring** + **search output enhancement**, tested and committed.
 
 The package imports as `vault_search` and exposes a single `vlt` CLI entry point with subcommands:
 
@@ -39,6 +38,11 @@ Package management migrated from pip/pyenv to uv.
 - Global tool install via `uv tool install -e .`.
 - README structured for users and developers.
 - Git repository initialized with V1 baseline commit.
+- **Search logic refactoring**: Introduced `SearchEngine`, `SnippetGenerator`, `OutputFormatter`, and `Database` classes for better separation of concerns.
+- **Search output enhancement**: Strategy pattern for snippet generation with table, list, code block, and plain text handlers.
+- **Smart snippet scoring**: Dynamic matching based on title matches, query position, frequency, and line length.
+- **Dynamic match count**: Auto-adjusts based on document length (2-5 matches).
+- **New output formats**: Added `--compact` option for one-line-per-result output.
 
 ## Verification
 
@@ -63,6 +67,8 @@ Smoke checks performed:
 - `vlt config set --local --root` writes project config correctly.
 - Auto-detect `.obsidian/` from cwd works.
 - `vlt --help` and all subcommand `--help` show descriptions.
+- Search output formatting correctly handles tables, lists, and code blocks.
+- New `--compact` output format works as expected.
 
 ## Known Limitations
 
@@ -71,15 +77,14 @@ Smoke checks performed:
 - No web UI.
 - No Obsidian plugin.
 - Basic wikilink resolution only.
-- Basic snippet generation only.
-- Search ranking is still simple.
 - Frontmatter parsing intentionally supports only a small YAML-like subset.
 
 ## Next Candidates
 
-- Improve search ranking.
-- Improve health text output.
+- Improve health text output formatting.
 - Add more parser coverage for real-world frontmatter variants.
 - Add tests for malformed Markdown/frontmatter edge cases.
 - Investigate incremental indexing.
 - Semantic search investigation (v0.3.0 roadmap).
+- Add additional snippet strategies (quote blocks, headings, math formulas).
+- Improve search ranking algorithm.

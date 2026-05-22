@@ -71,9 +71,9 @@ vlt config set default_limit 20 --local --root "D:\Personal Files\_private-notes
 ### 命令参考
 
 ```bash
-vlt index [--root <vault路径>] [--db <数据库路径>]          # 建立索引
-vlt search <查询词> [--root] [--db] [--area] [--tag] [--limit] [--json]  # 搜索
-vlt health [--root] [--db] [--json]                        # 健康检查
+vlt index [--root <vault路径>] [--db <数据库路径>]              # 建立索引
+vlt search <查询词> [--root] [--db] [--area] [--tag] [--limit] [--json] [--compact]  # 搜索
+vlt health [--root] [--db] [--json]                            # 健康检查
 vlt config set <key> <value> [--local] [--root <vault路径>] # 设置配置
 vlt config get <key> [--root <vault路径>]                  # 查看配置
 vlt config list [--root <vault路径>]                       # 列出配置
@@ -120,17 +120,17 @@ vlt search "异步" --area IT-learning --tag python
 
 当前 vault 的区域分布（供 `--area` 参考用）：
 
-| 区域 | 说明 |
-|------|------|
-| IT-learning | 技术学习笔记 |
-| next-level-door | 下一扇门 |
-| basic-data | 基础数据 |
-| Clippings | 网页剪藏 |
-| code-scripts | 代码脚本 |
-| docs | 文档 |
-| wiki | 百科 |
-| archives-years | 年度归档 |
-| meta | 元信息 |
+| 区域            | 说明         |
+| --------------- | ------------ |
+| IT-learning     | 技术学习笔记 |
+| next-level-door | 下一扇门     |
+| basic-data      | 基础数据     |
+| Clippings       | 网页剪藏     |
+| code-scripts    | 代码脚本     |
+| docs            | 文档         |
+| wiki            | 百科         |
+| archives-years  | 年度归档     |
+| meta            | 元信息       |
 
 #### 场景 3：脚本自动化
 
@@ -170,6 +170,7 @@ vlt health --json
 ```
 
 重点关注：
+
 - **`broken_wikilinks`** — 指向不存在笔记的 wikilink，需要修复
 - **`missing_tags`** — 没有任何标签的笔记数量
 - **`missing_titles`** — 没有标题（无 H1、无 frontmatter title）的笔记数量
@@ -206,6 +207,10 @@ vlt search "关键词" --db /tmp/vault.sqlite
 - SQLite + FTS5 关键词搜索
 - 中文友好的 `LIKE` 回退匹配
 - JSON 输出，便于脚本集成
+- **智能摘要生成**：基于评分机制选择最优匹配行
+- **策略模式**：针对表格、列表、代码块等内容类型采用不同处理策略
+- **动态匹配数量**：根据文档长度自动调整（2-5个匹配）
+- **多种输出格式**：支持文本、JSON、紧凑格式（`--compact`）
 - 轻量健康指标
 - 自动检测 vault 目录（向上查找 `.obsidian/`）
 - 全局 + 项目级配置系统
@@ -245,13 +250,23 @@ uv run pytest tests/test_parser.py::test_parse_markdown_frontmatter_headings_tag
 
 ```
 src/vault_search/
-  cli.py          # CLI 入口（vlt 统一命令，argparse subparsers）
-  config.py       # 配置管理（全局 + 项目级）
-  indexer.py      # 索引构建编排
-  database.py     # SQLite schema、FTS5 搜索、健康查询
-  parser.py       # Markdown 解析（frontmatter、标题、标签、wikilink）
-  discovery.py    # vault 文件发现（忽略运行时目录）
-  models.py       # 数据模型（Document, Heading, Link）
+  cli.py              # CLI 入口（vlt 统一命令，argparse subparsers）
+  config.py           # 配置管理（全局 + 项目级）
+  indexer.py          # 索引构建编排
+  database.py         # SQLite schema、FTS5 搜索、健康查询（Database 类）
+  search.py           # 搜索核心逻辑（SearchEngine 类）
+  snippet.py          # 智能摘要生成（SnippetGenerator 类）
+  formatter.py        # CLI 输出格式化（OutputFormatter 类）
+  parser.py           # Markdown 解析（frontmatter、标题、标签、wikilink）
+  discovery.py        # vault 文件发现（忽略运行时目录）
+  models.py           # 数据模型（Document, SearchResult, Heading, Link）
+  snippet_strategies/ # 内容类型处理策略（策略模式）
+    __init__.py
+    base.py
+    code_block.py
+    table.py
+    list.py
+    plain_text.py
 tests/
   conftest.py     # sample_vault fixture
   test_cli.py     # CLI 集成测试
@@ -269,8 +284,11 @@ tests/
 - **`discovery.py`** — walks a vault root for `*.md` files, skips ignored dirs (`.obsidian/`, `.git/`, `tmp/`, `.venv/`, `node_modules/`, `.trash/`, `.pytest_cache/`). Returns `DiscoveredFile` objects with `relative_path`, `area` (top-level dir or `"root"`), and `mtime`.
 - **`parser.py`** — parses a single Markdown file into a `Document` dataclass. Extracts: YAML frontmatter (title, tags), headings (`#`), wikilinks (`[[target|alias]]`), inline tags (`#tag`). Title resolution: first heading > frontmatter `title:` > filename stem. Supports Chinese characters in inline tags.
 - **`indexer.py`** — orchestrates discovery + parsing + link resolution, then calls `rebuild_database()`. Link resolution matches wikilink targets against document paths, titles, and stems (in that order), stripping `#section` fragments.
-- **`database.py`** — SQLite schema management, full-text search, and health queries. Uses FTS5 for keyword search with a Chinese-friendly `LIKE` fallback (triggered when FTS5 returns nothing for CJK queries). Schema: `documents`, `document_tags`, `headings`, `wikilinks`, `documents_fts` (virtual), `index_meta`.
-- **`cli.py`** — argparse subcommands under `vlt` entry point. Root resolution: CLI `--root` > auto-detect `.obsidian/` from cwd > global config `default_root`. Auto-builds index when database missing. Errors in helpers use `_CliError` exception, caught in `main()` for clean exit codes.
+- **`database.py`** — SQLite schema management, full-text search, and health queries. Uses FTS5 for keyword search with a Chinese-friendly `LIKE` fallback (triggered when FTS5 returns nothing for CJK queries). Schema: `documents`, `document_tags`, `headings`, `wikilinks`, `documents_fts` (virtual), `index_meta`. Now encapsulated in a `Database` class with backward-compatible function wrappers.
+- **`search.py`** — Search engine core (`SearchEngine` class). Coordinates database queries, merges FTS and LIKE results, and builds `SearchResult` objects with smart snippets.
+- **`snippet.py`** — Smart snippet generator (`SnippetGenerator` class). Uses scoring mechanism (title match +30, query position +0~20, frequency +15/occurrence, line length +10) and strategy pattern for content type handling. Dynamic match count based on document length (2-5 matches).
+- **`formatter.py`** — CLI output formatter (`OutputFormatter` class). Supports text (human-readable), JSON, and compact (one-line-per-result) formats. Handles multi-line snippet indentation and truncation of long paths/tags.
+- **`cli.py`** — argparse subcommands under `vlt` entry point. Root resolution: CLI `--root` > auto-detect `.obsidian/` from cwd > global config `default_root`. Auto-builds index when database missing. Errors in helpers use `_CliError` exception, caught in `main()` for clean exit codes. Uses new `SearchEngine` and `OutputFormatter` interfaces.
 - **`config.py`** — global config at `~/.config/vault-search/config.json`, project config at `<vault>/.obsidian/vault-search.json`. `resolve_root()` implements the priority chain. `resolve_setting()` merges project > global settings.
 
 **默认索引路径：** `<vault_root>/tmp/vault-search.sqlite`

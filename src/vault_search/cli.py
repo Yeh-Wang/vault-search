@@ -16,7 +16,9 @@ from .config import (
     save_project_config,
 )
 from .database import health_summary, search_documents
+from .formatter import OutputFormatter
 from .indexer import build_index, default_db_path
+from .search import SearchEngine
 
 # Windows 终端 UTF-8 输出
 if sys.stdout.encoding != "utf-8":
@@ -49,6 +51,7 @@ def main() -> int:
     sch.add_argument("--tag", action="append", default=[], help="按标签过滤，可多次使用")
     sch.add_argument("--limit", type=int, default=None, help="返回结果数量（默认读取配置或 10）")
     sch.add_argument("--json", action="store_true", help="以 JSON 格式输出")
+    sch.add_argument("--compact", action="store_true", help="以紧凑格式输出")
 
     # vlt health
     hlt = sub.add_parser("health", help="检查 vault 健康状况")
@@ -114,22 +117,19 @@ def _cmd_search(args, parser: argparse.ArgumentParser) -> int:
     # limit 优先级：CLI 参数 > 项目配置 > 全局配置 > 硬编码默认值 10
     limit = args.limit if args.limit is not None else resolve_setting("default_limit", root, default=10)
 
-    results = search_documents(db_path, query=args.query, limit=limit, area=args.area, tags=args.tag)
-    payload = {"query": args.query, "results": results}
+    # 使用新的 SearchEngine 接口
+    engine = SearchEngine(db_path)
+    results = engine.search(query=args.query, limit=limit, area=args.area, tags=args.tag)
+
+    formatter = OutputFormatter()
+    
     if args.json:
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        print(formatter.format_json(results, args.query))
+    elif args.compact:
+        print(formatter.format_compact(results))
     else:
-        if not results:
-            print("No results.")
-        else:
-            for i, item in enumerate(results, 1):
-                print(f"--- Result {i} ---")
-                print(f"  Title:  {item['title']}")
-                print(f"  Path:   {item['path']}")
-                if item["tags"]:
-                    print(f"  Tags:   {', '.join(item['tags'])}")
-                print(f"  Match:  {item['snippet']}")
-                print()
+        print(formatter.format_text(results))
+    
     return 0
 
 

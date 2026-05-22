@@ -40,7 +40,7 @@ def test_rebuild_and_search_fts(tmp_path: Path):
     assert results[0]["path"] == "wiki/ssl.md"
     assert results[0]["title"] == "SSL 证书"
     assert results[0]["tags"] == ["network", "知识总结"]
-    assert results[0]["snippet"] == "# SSL 证书"
+    assert results[0]["snippet"] == "# SSL 证书\nSSL 证书用于 HTTPS。"
 
 
 def test_search_chinese_fallback(tmp_path: Path):

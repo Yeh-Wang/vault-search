@@ -22,6 +22,7 @@ uv run vlt health --root /path/to/vault --json
 
 # Config management
 uv run vlt config set default_root /path/to/vault
+uv run vlt config get default_root
 uv run vlt config list
 uv run vlt config path
 ```
@@ -30,17 +31,35 @@ uv run vlt config path
 
 This is a local-first CLI tool for full-text search over Obsidian vaults. It indexes Markdown files into SQLite + FTS5 and provides a single `vlt` CLI entry point with subcommands: `index`, `search`, `health`, `config`.
 
-**Pipeline:** `discovery` → `parser` → `indexer` (which calls `database`)
+**模块职责:**
 
-- **`discovery.py`** — walks a vault root for `*.md` files, skips ignored dirs (`.obsidian/`, `.git/`, `tmp/`, `.venv/`, `node_modules/`, `.trash/`, `.pytest_cache/`). Returns `DiscoveredFile` objects with `relative_path`, `area` (top-level dir or `"root"`), and `mtime`.
-- **`parser.py`** — parses a single Markdown file into a `Document` dataclass. Extracts: YAML frontmatter (title, tags), headings (`#`), wikilinks (`[[target|alias]]`), inline tags (`#tag`). Title resolution: first heading > frontmatter `title:` > filename stem. Supports Chinese characters in inline tags.
-- **`models.py`** — frozen dataclasses: `Document`, `Heading`, `Link`. These are the canonical data types flowing through the pipeline.
-- **`indexer.py`** — orchestrates discovery + parsing + link resolution, then calls `rebuild_database()`. Link resolution matches wikilink targets against document paths, titles, and stems (in that order), stripping `#section` fragments.
-- **`database.py`** — SQLite schema management, full-text search, and health queries. Uses FTS5 for keyword search with a Chinese-friendly `LIKE` fallback (triggered when FTS5 returns nothing for CJK queries). Schema: `documents`, `document_tags`, `headings`, `wikilinks`, `documents_fts` (virtual), `index_meta`.
-- **`cli.py`** — argparse subcommands under `vlt` entry point. `--root` sets vault path (implies default DB path `<vault>/tmp/vault-search.sqlite`). `--db` overrides the DB path directly. Root resolution: CLI `--root` > auto-detect `.obsidian/` from cwd > global config `default_root`. Auto-builds index when database missing. Errors in helpers use `_CliError` exception, caught in `main()` for clean exit codes.
-- **`config.py`** — configuration management. Global config at `~/.config/vault-search/config.json`, project config at `<vault>/.obsidian/vault-search.json`. `resolve_root()` implements the priority chain. `resolve_setting()` merges project > global settings. `detect_vault_root()` walks up from cwd looking for `.obsidian/`.
+| 模块                  | 职责                                                           |
+| --------------------- | -------------------------------------------------------------- |
+| `cli.py`              | CLI命令解析与入口，使用SearchEngine和OutputFormatter           |
+| `search.py`           | 搜索核心逻辑（SearchEngine），协调数据库查询和结果合并         |
+| `database.py`         | 纯数据库操作（Database类），包含FTS5和LIKE搜索                 |
+| `snippet.py`          | 智能摘要生成（SnippetGenerator），基于评分机制选择最优匹配     |
+| `formatter.py`        | CLI输出格式化（OutputFormatter），支持文本/JSON/紧凑格式       |
+| `models.py`           | 数据模型定义（Document, SearchResult）                         |
+| `discovery.py`        | 文件发现                                                       |
+| `parser.py`           | Markdown解析                                                   |
+| `indexer.py`          | 索引构建                                                       |
+| `config.py`           | 配置管理                                                       |
+| `snippet_strategies/` | 内容类型处理策略（策略模式）：table/list/code_block/plain_text |
 
 **Default DB path:** `<vault_root>/tmp/vault-search.sqlite`
+
+## Design Documents
+
+| Document                                       | Description      |
+| ---------------------------------------------- | ---------------- |
+| `docs/strategy-design/overview.md`             | 策略模式架构概览 |
+| `docs/strategy-design/code_block.md`           | 代码块策略       |
+| `docs/strategy-design/table.md`                | 表格策略         |
+| `docs/strategy-design/list.md`                 | 列表策略         |
+| `docs/strategy-design/plain_text.md`           | 普通文本策略     |
+| `docs/2026-05-22-search-output-enhancement.md` | 搜索输出优化方案 |
+| `docs/2026-05-22-search-refactoring.md`        | 查询逻辑重构设计 |
 
 ## Key conventions
 
@@ -49,3 +68,7 @@ This is a local-first CLI tool for full-text search over Obsidian vaults. It ind
 - Tests use `tmp_path` fixture for isolation and `sample_vault` (conftest) for a realistic multi-file vault structure.
 - Config system: global (`~/.config/vault-search/config.json`) + project (`<vault>/.obsidian/vault-search.json`). No env vars.
 - The index is a full rebuild every time (no incremental indexing in v1).
+
+## Agent Rules
+
+- **Do not directly modify code**: Before making any code changes, always propose the solution to the user first and wait for confirmation before implementing.
