@@ -1,10 +1,10 @@
 # Project Status
 
-Date: 2026-05-22
+Date: 2026-05-28
 
 ## Current State
 
-V1 baseline + config system + unified CLI + **query logic refactoring** + **search output enhancement**, tested and committed.
+V1 baseline + config system + unified CLI + query logic refactoring + search output enhancement + **search quality fixes**, tested and committed.
 
 The package imports as `vault_search` and exposes a single `vlt` CLI entry point with subcommands:
 
@@ -43,6 +43,9 @@ Package management migrated from pip/pyenv to uv.
 - **Smart snippet scoring**: Dynamic matching based on title matches, query position, frequency, and line length.
 - **Dynamic match count**: Auto-adjusts based on document length (2-5 matches).
 - **New output formats**: Added `--compact` option for one-line-per-result output.
+- **Search quality fixes**: FTS5 rank scoring, LIKE wildcard escaping, FTS5 query sanitization, code block state tracking fix, shared DB connections.
+- **Snippet heading context**: Matching lines show their parent heading for better readability; heading matches scored highest (+50).
+- **Code comment downweight**: Comments inside code blocks scored -20 to deprioritize vs meaningful code.
 
 ## Verification
 
@@ -55,7 +58,7 @@ uv run pytest -v
 Last verified result:
 
 ```text
-38 passed
+38 passed in 0.58s
 ```
 
 Smoke checks performed:

@@ -15,7 +15,7 @@ from .config import (
     save_global_config,
     save_project_config,
 )
-from .database import health_summary, search_documents
+from .database import health_summary
 from .formatter import OutputFormatter
 from .indexer import build_index, default_db_path
 from .search import SearchEngine

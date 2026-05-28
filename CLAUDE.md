@@ -45,21 +45,28 @@ This is a local-first CLI tool for full-text search over Obsidian vaults. It ind
 | `parser.py`           | Markdown解析                                                   |
 | `indexer.py`          | 索引构建                                                       |
 | `config.py`           | 配置管理                                                       |
-| `snippet_strategies/` | 内容类型处理策略（策略模式）：table/list/code_block/plain_text |
+| `snippet_strategies/` | 内容类型处理策略（策略模式）：base（基类）、table/list/code_block/plain_text |
 
 **Default DB path:** `<vault_root>/tmp/vault-search.sqlite`
 
 ## Design Documents
 
-| Document                                       | Description      |
-| ---------------------------------------------- | ---------------- |
-| `docs/strategy-design/overview.md`             | 策略模式架构概览 |
-| `docs/strategy-design/code_block.md`           | 代码块策略       |
-| `docs/strategy-design/table.md`                | 表格策略         |
-| `docs/strategy-design/list.md`                 | 列表策略         |
-| `docs/strategy-design/plain_text.md`           | 普通文本策略     |
-| `docs/2026-05-22-search-output-enhancement.md` | 搜索输出优化方案 |
-| `docs/2026-05-22-search-refactoring.md`        | 查询逻辑重构设计 |
+| Document                                        | Description      |
+| ----------------------------------------------- | ---------------- |
+| `docs/design/architecture.md`                   | 架构文档         |
+| `docs/design/strategy/overview.md`              | 策略模式架构概览 |
+| `docs/design/strategy/code_block.md`            | 代码块策略       |
+| `docs/design/strategy/table.md`                 | 表格策略         |
+| `docs/design/strategy/list.md`                  | 列表策略         |
+| `docs/design/strategy/plain_text.md`            | 普通文本策略     |
+| `docs/design/search-output-enhancement.md`      | 搜索输出优化方案 |
+| `docs/design/search-refactoring.md`             | 查询逻辑重构设计 |
+
+## Changelog
+
+| Document                                    | Description          |
+| ------------------------------------------- | -------------------- |
+| `docs/changelog/2026-05-28-search-quality-fix.md` | 搜索质量修复记录 |
 
 ## Key conventions
 
